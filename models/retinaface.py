@@ -20,7 +20,7 @@ class ClassHead(nn.Module):
     def forward(self,x):
         out = self.conv1x1(x)
         out = out.permute(0,2,3,1).contiguous()
-        
+
         return out.view(out.shape[0], -1, 2)
 
 class BboxHead(nn.Module):
@@ -91,7 +91,7 @@ class RetinaFace(nn.Module):
         for i in range(fpn_num):
             classhead.append(ClassHead(inchannels,anchor_num))
         return classhead
-    
+
     def _make_bbox_head(self,fpn_num=3,inchannels=64,anchor_num=2):
         bboxhead = nn.ModuleList()
         for i in range(fpn_num):
@@ -105,8 +105,10 @@ class RetinaFace(nn.Module):
         return landmarkhead
 
     def forward(self,inputs):
+        # print('inputs shape : ',inputs.shape)
         out = self.body(inputs)
-
+        # for name,value in out.items():
+        #     print(name,value.shape)
         # FPN
         fpn = self.fpn(out)
 
@@ -124,4 +126,9 @@ class RetinaFace(nn.Module):
             output = (bbox_regressions, classifications, ldm_regressions)
         else:
             output = (bbox_regressions, F.softmax(classifications, dim=-1), ldm_regressions)
+            # print("*"*20)
+            # print(output[0].shape)
+            # print(output[1].shape)
+            # print(output[2].shape)
         return output
+

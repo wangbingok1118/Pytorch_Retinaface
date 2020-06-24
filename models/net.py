@@ -86,11 +86,15 @@ class FPN(nn.Module):
         output2 = self.output2(input[1])
         output3 = self.output3(input[2])
 
-        up3 = F.interpolate(output3, size=[output2.size(2), output2.size(3)], mode="nearest")
+        #up3 = F.interpolate(output3, size=[output2.size(2), output2.size(3)], mode="nearest")
+        up3 = F.interpolate(output3, scale_factor=2, mode="nearest")
+        # print(up3.shape)
+        # print(output2.shape)
         output2 = output2 + up3
         output2 = self.merge2(output2)
 
-        up2 = F.interpolate(output2, size=[output1.size(2), output1.size(3)], mode="nearest")
+        #up2 = F.interpolate(output2, size=[output1.size(2), output1.size(3)], mode="nearest")
+        up2 = F.interpolate(output2, scale_factor=2, mode="nearest")
         output1 = output1 + up2
         output1 = self.merge1(output1)
 
@@ -134,4 +138,5 @@ class MobileNetV1(nn.Module):
         x = x.view(-1, 256)
         x = self.fc(x)
         return x
+
 
