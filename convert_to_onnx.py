@@ -66,6 +66,14 @@ if __name__ == '__main__':
         cfg = cfg_mnet
     elif args.network == "resnet50":
         cfg = cfg_re50
+    import torch.onnx.symbolic_opset10 as onnx_symbolic
+    def upsample_nearest2d(g, input, output_size, *args):
+        # Currently, TRT 5.1/6.0/7.0 ONNX Parser does not support all ONNX ops
+        # needed to support dynamic upsampling ONNX forumlation
+        # Here we hardcode scale=2 as a temporary workaround
+        scales = g.op("Constant", value_t=torch.tensor([1., 1., 2., 2.]))
+        return g.op("Resize", input, scales, mode_s="nearest")
+    onnx_symbolic.upsample_nearest2d = upsample_nearest2d
     # net and model
     net = RetinaFace(cfg=cfg, phase = 'test')
     net = load_model(net, args.trained_model, args.cpu)
@@ -76,13 +84,13 @@ if __name__ == '__main__':
     net = net.to(device)
 
     # ------------------------ export -----------------------------
-    output_onnx = 'FaceDetector.onnx'
+    output_onnx = './weights/FaceDetector_4.onnx'
     print("==> Exporting model to ONNX format at '{}'".format(output_onnx))
     input_names = ["input0"]
-    output_names = ["output0"]
-    inputs = torch.randn(1, 3, args.long_side, args.long_side).to(device)
+    output_names = ["output0","output1","output2"]
+    inputs = torch.randn(4, 3, args.long_side, args.long_side).to(device) # batch size is 4
 
-    torch_out = torch.onnx._export(net, inputs, output_onnx, export_params=True, verbose=False,
-                                   input_names=input_names, output_names=output_names)
+    torch_out = torch.onnx._export(net, inputs, output_onnx, export_params=True, verbose=False,opset_version=10,input_names=input_names, output_names=output_names)
+
 
 
